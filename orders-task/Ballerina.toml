@@ -1,0 +1,14 @@
+[package]
+org = "wso2"
+name = "orders_task"
+version = "0.1.0"
+distribution = "2201.12.2"
+
+[[dependency]]
+org = "ballerina"
+name = "task"
+version = "2.8.1"
+repository="local"
+
+[build-options]
+observabilityIncluded = true

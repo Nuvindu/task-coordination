@@ -1,0 +1,10 @@
+taskId = "task1"
+groupId = "group1"
+heartbeatFrequency = 1
+livenessCheckInterval = 6
+
+[databaseConfig]
+url = "jdbc:postgresql://localhost:5432/testdb"
+user = "root"
+password = "password"
+port = 5432
