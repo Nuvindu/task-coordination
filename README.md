@@ -17,7 +17,7 @@ The task coordination system follows a warm backup approach where,
 
 ## Configurations
 
-The task coordination system can be configured as follows to define operational parameters. These configurations handle how each node behaves in the coordination task group, including how often it checks liveness, sends heartbeats, and interacts with the underlying database.
+The task coordination system can be configured using the `WarmBackupConfig` record. This handles how each node participates in coordination, how frequently it checks for liveness, updates its status, and connects to the coordination database.
 
 ```ballerina
 public type WarmBackupConfig record {
@@ -27,17 +27,47 @@ public type WarmBackupConfig record {
     string groupId;
     int heartbeatFrequency = 1;
 };
+
+public type DatabaseConfig MysqlConfig|PostgresqlConfig;
 ```
 
 ### Configuration Parameters
 
 | Parameter | Description |
 |-----------|-------------|
-| **databaseConfig** | Database configuration for task coordination |
+| **databaseConfig** | Database configurations for task coordination |
 | **livenessCheckInterval** | Interval (in seconds) to check the liveness of the active node |
 | **taskId** | Unique identifier for the current node |
 | **groupId** | Identifier for the group of nodes coordinating the task |
 | **heartbeatFrequency** | Interval (in seconds) for the node to update its heartbeat |
+
+### Database Configuration
+
+The `databaseConfig` can be either MySQL or PostgreSQL. This is defined using a union type as `DatabaseConfig`. Users can choose either `task:MysqlConfig` or `task:PostgresqlConfig` based on their preferred database.
+
+**For PostgreSQL:**
+
+```ballerina
+type PostgresqlConfig record {
+    string host;
+    int port;
+    string user;
+    string password;
+    string database;
+};
+```
+
+**For MySQL:**
+
+```ballerina
+type MysqlConfig record {
+    string host;
+    int port;
+    string user;
+    string password;
+    string database;
+};
+```
 
 ## Getting Started
 
@@ -65,10 +95,11 @@ public type WarmBackupConfig record {
    livenessCheckInterval = 6
 
    [databaseConfig]
-   user = "root"
-   password = "password"
-   database = "database"
-   port = 5432
+    host = "localhost"
+    user = "root"
+    password = "password"
+    port = 5432
+    database = "testdb"
    ```
 
 4. Run the application.
