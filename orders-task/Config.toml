@@ -4,7 +4,8 @@ heartbeatFrequency = 1
 livenessCheckInterval = 6
 
 [databaseConfig]
-url = "jdbc:postgresql://localhost:5432/testdb"
+host = "localhost"
 user = "root"
 password = "password"
 port = 5432
+database = "testdb"

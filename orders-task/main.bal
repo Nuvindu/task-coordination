@@ -5,7 +5,7 @@ import ballerinax/postgresql;
 import ballerinax/postgresql.driver as _;
 import ballerina/lang.runtime;
 
-configurable task:DatabaseConfig databaseConfig = ?;
+configurable task:PostgresqlConfig databaseConfig = ?;
 configurable int livenessCheckInterval = ?;
 configurable int heartbeatFrequency = ?;
 configurable string taskId = ?;
