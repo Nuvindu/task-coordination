@@ -1,11 +1,9 @@
 
 DROP TABLE IF EXISTS token_holder;
 CREATE TABLE token_holder (
-    task_id VARCHAR(36),
-    group_id VARCHAR(36),
-    term INT,
-    PRIMARY KEY (task_id),
-    UNIQUE (task_id, group_id)
+    task_id VARCHAR(255) NOT NULL,
+    group_id VARCHAR(255) NOT NULL PRIMARY KEY,
+    term INT NOT NULL
 );
 
 DROP TABLE IF EXISTS health_check;
