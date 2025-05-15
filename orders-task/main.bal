@@ -1,9 +1,9 @@
 import ballerina/task;
 import ballerina/io;
+import ballerina/time;
 import ballerina/sql;
 import ballerinax/postgresql;
 import ballerinax/postgresql.driver as _;
-import ballerina/lang.runtime;
 
 configurable task:PostgresqlConfig databaseConfig = ?;
 configurable int livenessCheckInterval = ?;
@@ -11,35 +11,44 @@ configurable int heartbeatFrequency = ?;
 configurable string taskId = ?;
 configurable string groupId = ?;
 
-postgresql:Client dbClient = check new (username = databaseConfig.user, password = databaseConfig.password, database = "testdb");
+time:Utc currentUtc = time:utcNow();
+time:Utc newTime = time:utcAddSeconds(currentUtc, 8);
+time:Civil time = time:utcToCivil(newTime);
 
-task:JobId result = check task:scheduleJobRecurByFrequency(
-    job = new Job(),
-    interval = 15,
-    maxCount = 5,
-    warmBackupConfig = {
-        databaseConfig,
-        livenessCheckInterval,
-        taskId,
-        groupId,
-        heartbeatFrequency
-    }
-);
+final postgresql:Client dbClient = check new (username = databaseConfig.user, password = databaseConfig.password, database = "testdb");
 
-public function main() returns error? {
-    io:println("Job scheduled with ID: ", result);
-    runtime:sleep(140);
-}
+task:TriggerConfiguration recurSchedule = {
+    interval: 4,
+    maxCount: 20,
+    startTime: time,
+    endTime: time:utcToCivil(time:utcAddSeconds(currentUtc, 60)),
+    taskPolicy: {}
+};
 
-class Job {
-    *task:Job;
+listener task:Listener taskListener = new(trigger = recurSchedule, warmBackupConfig = {
+    databaseConfig,
+    livenessCheckInterval,
+    taskId,
+    groupId,
+    heartbeatFrequency
+});
 
-    public function execute() {
+service "job-1" on taskListener {
+    private int i = 1;
+
+    isolated function execute() {
         do {
-            sql:ExecutionResult executeResult = check dbClient->execute(`INSERT INTO orders (message) VALUES ('ordered')`);
+            sql:ExecutionResult executeResult;
+            lock {
+                executeResult = check dbClient->execute(`INSERT INTO orders (message) VALUES ('ordered')`);
+            }
             io:println("Query executed in Orders table: ", executeResult);
         } on fail error err {
             io:println("Error occurred while executing the job: ", err);
         }
+    }
+
+    isolated function onError() {
+        io:println("Error occurred in job-1");
     }
 }
