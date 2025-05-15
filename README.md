@@ -105,6 +105,7 @@ type MysqlConfig record {
 4. Run the application.
 
    ```bash
+   cd order-task
    bal run
    ```
 
