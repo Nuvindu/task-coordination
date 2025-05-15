@@ -17,7 +17,7 @@ The task coordination system follows a warm backup approach where,
 
 ## Configurations
 
-The task coordination system can be configured using the `WarmBackupConfig` record. This handles how each node participates in coordination, how frequently it checks for liveness, updates its status, and connects to the coordination database.
+The task coordination system can be configured using the `WarmBackupConfig` record under `ListenerConfiguration`. So the coordination can only be done through a task listener. This handles how each node participates in coordination, how frequently it checks for liveness, updates its status, and connects to the coordination database.
 
 ```ballerina
 public type WarmBackupConfig record {
@@ -49,11 +49,11 @@ The `databaseConfig` can be either MySQL or PostgreSQL. This is defined using a 
 
 ```ballerina
 type PostgresqlConfig record {
-    string host;
-    int port;
-    string user;
-    string password;
-    string database;
+   string host;
+   int port;
+   string user;
+   string password;
+   string database;
 };
 ```
 
@@ -61,17 +61,88 @@ type PostgresqlConfig record {
 
 ```ballerina
 type MysqlConfig record {
-    string host;
-    int port;
-    string user;
-    string password;
-    string database;
+   string host;
+   int port;
+   string user;
+   string password;
+   string database;
 };
 ```
 
-## Getting Started
+### Setting Up Task Coordination
 
-### Setup
+1. **Create a Task Listener**
+
+   First, set up a task listener with both scheduling parameters and coordination configuration:
+
+   ```ballerina
+   listener task:Listener taskListener = new (
+      trigger = {
+         interval,
+         maxCount
+      }, 
+      warmBackupConfig = {
+         databaseConfig,
+         livenessCheckInterval,
+         taskId, // must be unique for each node
+         groupId,
+         heartbeatFrequency
+      }
+   );
+   ```
+
+2. **Implement Service Logic**
+
+   Create a service with your business logic in the `execute` method.
+
+   ```ballerina
+   service "job-1" on taskListener {
+      private int i = 1;
+
+      isolated function execute() {
+         do {
+            // add the business logic
+         } on fail error err {
+            // handle errors here
+         }
+      }
+
+      isolated function onError() {
+         io:println("Error occurred in job-1");
+      }
+   }
+   ```
+
+On a different node, deploy the same code but with a different value for `taskId`:
+
+### Database Schema
+
+The task coordination system uses two main tables in the database to manage coordination between nodes.
+These tables should exist when the coordination programs happens.
+
+#### Token holder table
+
+The `token_holder` table maintains information about which node is currently the active token bearer:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| group_id | VARCHAR(255) | Primary key, identifies the coordination group |
+| task_id | VARCHAR(255) | The ID of the node |
+| term | INTEGER | Increments with each leadership change, prevents split-brain scenarios |
+
+#### Health check table
+
+The `health_check` table stores heartbeat information for each node.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| task_id | VARCHAR(255) | Node identifier (part of compound primary key) |
+| group_id | VARCHAR(255) | Group identifier (part of compound primary key) |
+| last_heartbeat | TIMESTAMP | Last time the node sent a heartbeat |
+
+### Execution
+
+Ensure your PostgreSQL or MySQL database is set up and accessible from all nodes. And the coordination tables should be created before the service starts. Then deploy the same application on multiple nodes and ensure each node has a unique `taskId` but the same `groupId`. All nodes should connect to the same coordination database.
 
 1. Clone this repository.
 
@@ -109,10 +180,12 @@ type MysqlConfig record {
    bal run
    ```
 
-### Process
+### Testing Failover
 
-1. Run the application on two different VMs or instances
-2. Make sure to set a unique `taskId` for each instance
-3. Observe that only one node is processing tasks
-4. Stop or disconnect the token bearer node
-5. Observe that the task in the candidate node detects the failure and takes over automatically
+To test the failover mechanism,
+
+1. Start both nodes and observe logs
+2. Verify only one node is actively processing tasks
+3. Terminate the token bearer (active) node
+4. Within `livenessCheckInterval` seconds, the standby node will detect the failure
+5. The standby node will acquire the token and begin processing tasks
