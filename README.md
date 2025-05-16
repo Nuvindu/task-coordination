@@ -100,15 +100,7 @@ type MysqlConfig record {
       private int i = 1;
 
       isolated function execute() {
-         do {
-            // add the business logic
-         } on fail error err {
-            // handle errors here
-         }
-      }
-
-      isolated function onError() {
-         io:println("Error occurred in job-1");
+         // add the business logic
       }
    }
    ```
@@ -117,8 +109,7 @@ On a different node, deploy the same code but with a different value for `taskId
 
 ### Database Schema
 
-The task coordination system uses two main tables in the database to manage coordination between nodes.
-These tables should exist when the coordination programs happens.
+The task coordination system requires two essential tables that must be created before starting your application.
 
 #### Token holder table
 

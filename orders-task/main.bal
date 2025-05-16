@@ -17,21 +17,22 @@ time:Civil time = time:utcToCivil(newTime);
 
 final postgresql:Client dbClient = check new (username = databaseConfig.user, password = databaseConfig.password, database = "testdb");
 
-task:TriggerConfiguration recurSchedule = {
-    interval: 4,
-    maxCount: 20,
-    startTime: time,
-    endTime: time:utcToCivil(time:utcAddSeconds(currentUtc, 60)),
-    taskPolicy: {}
-};
-
-listener task:Listener taskListener = new(trigger = recurSchedule, warmBackupConfig = {
-    databaseConfig,
-    livenessCheckInterval,
-    taskId,
-    groupId,
-    heartbeatFrequency
-});
+listener task:Listener taskListener = new(
+    trigger = {
+        interval: 4,
+        maxCount: 20,
+        startTime: time,
+        endTime: time:utcToCivil(time:utcAddSeconds(currentUtc, 60)),
+        taskPolicy: {}
+    }, 
+    warmBackupConfig = {
+        databaseConfig,
+        livenessCheckInterval,
+        taskId,
+        groupId,
+        heartbeatFrequency
+    }
+);
 
 service "job-1" on taskListener {
     private int i = 1;
@@ -46,9 +47,5 @@ service "job-1" on taskListener {
         } on fail error err {
             io:println("Error occurred while executing the job: ", err);
         }
-    }
-
-    isolated function onError() {
-        io:println("Error occurred in job-1");
     }
 }
