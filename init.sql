@@ -1,4 +1,3 @@
-
 DROP TABLE IF EXISTS token_holder;
 CREATE TABLE token_holder (
     task_id VARCHAR(255) NOT NULL,
@@ -25,6 +24,8 @@ CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
     message VARCHAR(255)
 );
+
+LOCK TABLE token_holder IN EXCLUSIVE MODE;
 
 -- Create user and database
 -- Run these as a superuser or a user with appropriate privileges
